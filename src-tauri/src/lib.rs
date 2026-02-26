@@ -191,10 +191,16 @@ fn register_template_shortcuts(app: &tauri::AppHandle, db: &Database) {
                         if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
                             let handle = app_handle.clone();
                             let tid = template_id.clone();
+                            // Hide window first so target app receives Cmd+C
+                            if let Some(win) = handle.get_webview_window("main") {
+                                let _ = win.hide();
+                            }
                             // Simulate Cmd+C then emit after a short delay
                             std::thread::spawn(move || {
+                                // Brief pause to let target app regain focus
+                                std::thread::sleep(std::time::Duration::from_millis(50));
                                 simulate_cmd_c();
-                                std::thread::sleep(std::time::Duration::from_millis(150));
+                                std::thread::sleep(std::time::Duration::from_millis(200));
                                 if let Some(win) = handle.get_webview_window("main") {
                                     let _ = win.show();
                                     let _ = win.set_focus();
