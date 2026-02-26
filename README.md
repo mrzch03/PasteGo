@@ -21,7 +21,10 @@ macOS 剪贴板 AI 助手 — 自动记录剪贴板历史，一键调用 AI 处�
 
 前往 [Releases](https://github.com/mrzch03/PasteGo/releases) 下载最新的 `.dmg` 文件，拖入 Applications 即可。
 
-> 首次打开可能提示"无法验证开发者"，请前往 **系统设置 → 隐私与安全 → 仍要打开**。
+> 安装后打开前，需要在终端运行以下命令（去除 macOS 隔离标记）：
+> ```bash
+> xattr -cr /Applications/PasteGo.app
+> ```
 
 ### 从源码构建
 
