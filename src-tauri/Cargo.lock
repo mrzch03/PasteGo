@@ -81,6 +81,7 @@ version = "0.1.0"
 dependencies = [
  "arboard",
  "chrono",
+ "core-graphics",
  "futures-util",
  "hex",
  "log",

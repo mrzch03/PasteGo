@@ -191,19 +191,44 @@ fn register_template_shortcuts(app: &tauri::AppHandle, db: &Database) {
                         if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
                             let handle = app_handle.clone();
                             let tid = template_id.clone();
-                            if let Some(win) = handle.get_webview_window("main") {
-                                let _ = win.show();
-                                let _ = win.set_focus();
-                            }
-                            let _ = handle.emit_to(
-                                EventTarget::webview_window("main"),
-                                "quick-template",
-                                &tid,
-                            );
+                            // Simulate Cmd+C then emit after a short delay
+                            std::thread::spawn(move || {
+                                simulate_cmd_c();
+                                std::thread::sleep(std::time::Duration::from_millis(150));
+                                if let Some(win) = handle.get_webview_window("main") {
+                                    let _ = win.show();
+                                    let _ = win.set_focus();
+                                }
+                                let _ = handle.emit_to(
+                                    EventTarget::webview_window("main"),
+                                    "quick-template",
+                                    &tid,
+                                );
+                            });
                         }
                     },
                 );
             }
+        }
+    }
+}
+
+/// Simulate Cmd+C keypress using macOS CGEvent API
+fn simulate_cmd_c() {
+    use core_graphics::event::{CGEvent, CGEventFlags, CGKeyCode};
+    use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
+
+    // Key code for 'C' on macOS is 8
+    const KEY_C: CGKeyCode = 8;
+
+    if let Ok(source) = CGEventSource::new(CGEventSourceStateID::HIDSystemState) {
+        if let Ok(key_down) = CGEvent::new_keyboard_event(source.clone(), KEY_C, true) {
+            key_down.set_flags(CGEventFlags::CGEventFlagCommand);
+            key_down.post(core_graphics::event::CGEventTapLocation::HID);
+        }
+        if let Ok(key_up) = CGEvent::new_keyboard_event(source, KEY_C, false) {
+            key_up.set_flags(CGEventFlags::CGEventFlagCommand);
+            key_up.post(core_graphics::event::CGEventTapLocation::HID);
         }
     }
 }
