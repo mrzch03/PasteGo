@@ -436,6 +436,11 @@
   color: var(--danger);
 }
 
+.btn-action.btn-copy:hover {
+  background: rgba(52, 199, 89, 0.1);
+  color: #34c759;
+}
+
 /* ======================== Empty state ======================== */
 .empty-state {
   text-align: center;

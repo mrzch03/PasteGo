@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import type { ClipItem, ClipTypeFilter } from "../types";
 
 const TYPE_FILTERS: { key: ClipTypeFilter; label: string; icon: string }[] = [
@@ -39,6 +40,7 @@ export function ClipList({
 }: Props) {
   const [imageCache, setImageCache] = useState<Record<string, string>>({});
   const [focusIndex, setFocusIndex] = useState(-1);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -263,6 +265,31 @@ export function ClipList({
               )}
             </div>
             <div className="clip-actions">
+              <button
+                className="btn-action btn-copy"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  try {
+                    await writeText(clip.content);
+                    setCopiedId(clip.id);
+                    setTimeout(() => setCopiedId(null), 1500);
+                  } catch (err) {
+                    console.error("Copy failed:", err);
+                  }
+                }}
+                title={copiedId === clip.id ? "已复制" : "复制"}
+              >
+                {copiedId === clip.id ? (
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.2">
+                    <path d="M3 7L6 10L11 4" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                ) : (
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.2">
+                    <rect x="4" y="4" width="8" height="8" rx="1" />
+                    <path d="M10 4V3a1 1 0 00-1-1H3a1 1 0 00-1 1v6a1 1 0 001 1h1" />
+                  </svg>
+                )}
+              </button>
               <button
                 className="btn-action"
                 onClick={(e) => {
