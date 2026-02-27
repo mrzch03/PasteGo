@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "PasteGo",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "identifier": "com.pastego.dev",
   "build": {
     "frontendDist": "../dist",
@@ -41,7 +41,9 @@
     "macOS": {
       "frameworks": [],
       "minimumSystemVersion": "14.0",
-      "infoPlist": "Info.plist"
+      "infoPlist": "Info.plist",
+      "entitlements": "Entitlements.plist",
+      "signingIdentity": "-"
     }
   }
 }
