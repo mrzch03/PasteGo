@@ -260,6 +260,12 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .setup(|app| {
+            // Hide from Dock (agent mode)
+            unsafe {
+                use cocoa::appkit::{NSApp, NSApplication, NSApplicationActivationPolicy};
+                NSApp().setActivationPolicy_(NSApplicationActivationPolicy::NSApplicationActivationPolicyAccessory);
+            }
+
             // 窗口圆角
             if let Some(window) = app.get_webview_window("main") {
                 #[allow(deprecated)]
