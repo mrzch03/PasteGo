@@ -57,7 +57,6 @@ export function ClipList({
 }: Props) {
   const [imageCache, setImageCache] = useState<Record<string, string>>({});
   const [focusIndex, setFocusIndex] = useState(-1);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
   // 图片预览弹窗状态
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   // 长文本展开状态，记录已展开的条目 ID
@@ -108,14 +107,12 @@ export function ClipList({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clips]);
 
-  // 复制单条内容到剪贴板
-  const handleCopy = useCallback(async (clip: ClipItem) => {
+  // 复制并粘贴到目标应用
+  const handleCopyAndPaste = useCallback(async (clip: ClipItem) => {
     try {
-      await writeText(clip.content);
-      setCopiedId(clip.id);
-      setTimeout(() => setCopiedId(null), 1500);
+      await invoke("copy_and_paste", { content: clip.content });
     } catch (e) {
-      console.error("复制失败:", e);
+      console.error("复制粘贴失败:", e);
     }
   }, []);
 
@@ -174,7 +171,7 @@ export function ClipList({
   // 滚动到聚焦项
   useEffect(() => {
     if (focusIndex >= 0 && listRef.current) {
-      const items = listRef.current.querySelectorAll(".clip-item");
+      const items = listRef.current.querySelectorAll(".clip-item-wrapper");
       items[focusIndex]?.scrollIntoView({ block: "nearest" });
     }
   }, [focusIndex]);
@@ -314,137 +311,135 @@ export function ClipList({
         {clips.map((clip, index) => (
           <div
             key={clip.id}
-            className={`clip-item ${isSelected(clip.id) ? "selected" : ""} ${clip.is_pinned ? "pinned" : ""} ${focusIndex === index ? "focused" : ""}`}
-            onClick={() => onToggleSelect(clip.id)}
+            className={`clip-item-wrapper ${isSelected(clip.id) ? "selected" : ""} ${clip.is_pinned ? "pinned" : ""} ${focusIndex === index ? "focused" : ""}`}
           >
-            <div className="clip-select-indicator">
+            {/* 选中区域 */}
               <div
-                className={`select-circle ${isSelected(clip.id) ? "checked" : ""}`}
+                className="clip-zone-select"
+                onClick={() => onToggleSelect(clip.id)}
+                title="选中"
               >
-                {isSelected(clip.id) && (
-                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <div className="zone-hover-overlay">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                     <path
-                      d="M2 5L4 7L8 3"
-                      stroke="white"
-                      strokeWidth="1.5"
+                      d="M4 10L8 14L16 6"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
                   </svg>
-                )}
-              </div>
-            </div>
-            <div className="clip-body">
-              <div className="clip-meta">
-                <span className={`clip-type-badge ${clip.clip_type}`}>
-                  {clip.clip_type === "text" && "文本"}
-                  {clip.clip_type === "code" && "代码"}
-                  {clip.clip_type === "url" && "链接"}
-                  {clip.clip_type === "image" && "图片"}
-                </span>
-                {clip.source_app && (
-                  <span className="clip-source">{clip.source_app}</span>
-                )}
-                <span className="clip-time">
-                  {formatTime(clip.created_at)}
-                </span>
-                {clip.is_pinned && <span className="pin-indicator" />}
-              </div>
-              {clip.clip_type === "image" && imageCache[clip.id] ? (
-                <img
-                  src={imageCache[clip.id]}
-                  alt="clipboard image"
-                  className="clip-image-preview"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setPreviewImage(imageCache[clip.id]);
-                  }}
-                />
-              ) : (
-                <div className="clip-text-wrapper">
-                  <div
-                    className={`clip-text ${clip.clip_type === "code" ? "code" : ""} ${expandedIds.has(clip.id) ? "expanded" : ""}`}
-                  >
-                    {clip.content.length > TEXT_TRUNCATE_LIMIT && !expandedIds.has(clip.id)
-                      ? clip.content.slice(0, TEXT_TRUNCATE_LIMIT) + "..."
-                      : clip.content}
-                  </div>
-                  {clip.content.length > TEXT_TRUNCATE_LIMIT && (
-                    <button
-                      className="clip-expand-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleExpand(clip.id);
-                      }}
-                    >
-                      {expandedIds.has(clip.id) ? "收起" : "查看更多"}
-                    </button>
+                </div>
+                <div
+                  className={`select-circle ${isSelected(clip.id) ? "checked" : ""}`}
+                >
+                  {isSelected(clip.id) && (
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                      <path
+                        d="M2 5L4 7L8 3"
+                        stroke="white"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
                   )}
                 </div>
-              )}
-            </div>
-            <div className="clip-actions">
-              {/* 复制按钮 */}
-              <button
-                className={`btn-action btn-copy-item ${copiedId === clip.id ? "copied" : ""}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleCopy(clip);
-                }}
-                title="复制"
+              </div>
+              {/* 主体区域：点击复制+粘贴 */}
+              <div
+                className="clip-zone-body"
+                onClick={() => handleCopyAndPaste(clip)}
               >
-                {copiedId === clip.id ? (
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path d="M3 7L6 10L11 4" strokeLinecap="round" strokeLinejoin="round" />
+                <div className="zone-hover-overlay">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <rect x="8" y="2" width="13" height="13" rx="2" />
+                    <path d="M5 8H4a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-1" />
                   </svg>
+                </div>
+                <div className="clip-meta">
+                  <span className={`clip-type-badge ${clip.clip_type}`}>
+                    {clip.clip_type === "text" && "文本"}
+                    {clip.clip_type === "code" && "代码"}
+                    {clip.clip_type === "url" && "链接"}
+                    {clip.clip_type === "image" && "图片"}
+                  </span>
+                  {clip.source_app && (
+                    <span className="clip-source">{clip.source_app}</span>
+                  )}
+                  <span className="clip-time">
+                    {formatTime(clip.created_at)}
+                  </span>
+                  {clip.is_pinned && <span className="pin-indicator" />}
+                </div>
+                {clip.clip_type === "image" && imageCache[clip.id] ? (
+                  <img
+                    src={imageCache[clip.id]}
+                    alt="clipboard image"
+                    className="clip-image-preview"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPreviewImage(imageCache[clip.id]);
+                    }}
+                  />
                 ) : (
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.2">
-                    <rect x="4" y="1" width="9" height="9" rx="1.5" />
-                    <path d="M1 5v7a1.5 1.5 0 001.5 1.5H10" />
-                  </svg>
+                  <div className="clip-text-wrapper">
+                    <div
+                      className={`clip-text ${clip.clip_type === "code" ? "code" : ""} ${expandedIds.has(clip.id) ? "expanded" : ""}`}
+                    >
+                      {clip.content.length > TEXT_TRUNCATE_LIMIT && !expandedIds.has(clip.id)
+                        ? clip.content.slice(0, TEXT_TRUNCATE_LIMIT) + "..."
+                        : clip.content}
+                    </div>
+                  </div>
                 )}
-              </button>
-              {/* 置顶按钮 */}
-              <button
-                className="btn-action"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onTogglePin(clip.id);
-                }}
-                title={clip.is_pinned ? "取消置顶" : "置顶"}
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 14 14"
-                  fill={clip.is_pinned ? "currentColor" : "none"}
-                  stroke="currentColor"
-                  strokeWidth="1.2"
+              </div>
+              {/* 操作区域：展开 + 置顶 + 删除 */}
+              <div className="clip-zone-actions">
+                {clip.clip_type !== "image" && clip.content.length > TEXT_TRUNCATE_LIMIT && (
+                  <button
+                    className={`btn-action btn-expand ${expandedIds.has(clip.id) ? "expanded" : ""}`}
+                    onClick={() => toggleExpand(clip.id)}
+                    title={expandedIds.has(clip.id) ? "收起" : "展开"}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d={expandedIds.has(clip.id) ? "M3 9L7 5L11 9" : "M3 5L7 9L11 5"} />
+                    </svg>
+                  </button>
+                )}
+                <button
+                  className="btn-action"
+                  onClick={() => onTogglePin(clip.id)}
+                  title={clip.is_pinned ? "取消置顶" : "置顶"}
                 >
-                  <path d="M5 1L9 1L9 5L12 7L12 8L8 8L8 13L6 13L6 8L2 8L2 7L5 5Z" />
-                </svg>
-              </button>
-              {/* 删除按钮 — 更大更醒目 */}
-              <button
-                className="btn-action btn-delete"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(clip.id);
-                }}
-                title="删除"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 14 14"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.4"
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 14 14"
+                    fill={clip.is_pinned ? "currentColor" : "none"}
+                    stroke="currentColor"
+                    strokeWidth="1.2"
+                  >
+                    <path d="M5 1L9 1L9 5L12 7L12 8L8 8L8 13L6 13L6 8L2 8L2 7L5 5Z" />
+                  </svg>
+                </button>
+                <button
+                  className="btn-action btn-delete"
+                  onClick={() => onDelete(clip.id)}
+                  title="删除"
                 >
-                  <path d="M2 4h10M5 4V2h4v2M3 4v8h8V4" />
-                </svg>
-              </button>
-            </div>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 14 14"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.4"
+                  >
+                    <path d="M2 4h10M5 4V2h4v2M3 4v8h8V4" />
+                  </svg>
+                </button>
+              </div>
           </div>
         ))}
       </div>

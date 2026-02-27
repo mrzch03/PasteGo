@@ -6,7 +6,11 @@ mod clipboard;
 mod db;
 
 use db::{AiProvider, Database, Template};
+use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::Arc;
+
+/// 记录 PasteGo 唤起前最前台应用的 PID，用于粘贴时切回
+static PREVIOUS_APP_PID: AtomicI32 = AtomicI32::new(0);
 use tauri::{
     image::Image,
     menu::{MenuBuilder, MenuItemBuilder},
@@ -189,16 +193,22 @@ async fn copy_and_paste(app: tauri::AppHandle, content: String) -> Result<(), St
     let mut clipboard = arboard::Clipboard::new().map_err(|e| e.to_string())?;
     clipboard.set_text(&content).map_err(|e| e.to_string())?;
 
-    // 隐藏主窗口
-    if let Some(win) = app.get_webview_window("main") {
-        let _ = win.hide();
-    }
+    // 在原生线程中执行隐藏 + 切回 + 粘贴（CGEvent 需要在原生线程中运行）
+    std::thread::spawn(move || {
+        // 隐藏主窗口
+        if let Some(win) = app.get_webview_window("main") {
+            let _ = win.hide();
+        }
 
-    // 等待焦点切换回目标应用
-    std::thread::sleep(std::time::Duration::from_millis(200));
+        // 显式激活之前的前台应用
+        reactivate_previous_app();
 
-    // 模拟 Cmd+V 粘贴
-    simulate_cmd_v();
+        // 等待目标应用完成激活
+        std::thread::sleep(std::time::Duration::from_millis(300));
+
+        // 模拟 Cmd+V 粘贴
+        simulate_cmd_v();
+    });
 
     Ok(())
 }
@@ -246,8 +256,7 @@ fn register_template_shortcuts(app: &tauri::AppHandle, db: &Database) {
                                 std::thread::sleep(std::time::Duration::from_millis(200));
                                 if let Some(win) = handle.get_webview_window("main") {
                                     position_window_near_mouse(&win);
-                                    let _ = win.show();
-                                    let _ = win.set_focus();
+                                    show_and_focus_window(&win);
                                 }
                                 let _ = handle.emit_to(
                                     EventTarget::webview_window("main"),
@@ -281,6 +290,47 @@ fn simulate_cmd_c() {
             key_up.post(core_graphics::event::CGEventTapLocation::HID);
         }
     }
+}
+
+/// 保存当前最前台应用的 PID（在显示 PasteGo 之前调用）
+fn save_frontmost_app_pid() {
+    unsafe {
+        let workspace: cocoa::base::id = msg_send![class!(NSWorkspace), sharedWorkspace];
+        let front_app: cocoa::base::id = msg_send![workspace, frontmostApplication];
+        if front_app != cocoa::base::nil {
+            let pid: i32 = msg_send![front_app, processIdentifier];
+            PREVIOUS_APP_PID.store(pid, Ordering::SeqCst);
+        }
+    }
+}
+
+/// 重新激活之前保存的前台应用
+fn reactivate_previous_app() {
+    let pid = PREVIOUS_APP_PID.load(Ordering::SeqCst);
+    if pid > 0 {
+        unsafe {
+            let app: cocoa::base::id = msg_send![
+                class!(NSRunningApplication),
+                runningApplicationWithProcessIdentifier: pid
+            ];
+            if app != cocoa::base::nil {
+                // NSApplicationActivateIgnoringOtherApps = 1 << 1
+                let _: cocoa::base::BOOL = msg_send![app, activateWithOptions: 2u64];
+            }
+        }
+    }
+}
+
+/// 显示窗口并立即激活，确保无需额外点击即可交互
+fn show_and_focus_window(window: &tauri::WebviewWindow) {
+    // 先记住当前前台应用，再激活 PasteGo
+    save_frontmost_app_pid();
+    unsafe {
+        let ns_app: cocoa::base::id = msg_send![class!(NSApplication), sharedApplication];
+        let _: () = msg_send![ns_app, activateIgnoringOtherApps: cocoa::base::YES];
+    }
+    let _ = window.show();
+    let _ = window.set_focus();
 }
 
 /// 获取当前鼠标光标位置（macOS CGEvent API）
@@ -366,8 +416,7 @@ fn toggle_main_window(app: &tauri::AppHandle) {
             let _ = window.hide();
         } else {
             position_window_near_mouse(&window);
-            let _ = window.show();
-            let _ = window.set_focus();
+            show_and_focus_window(&window);
         }
     }
 }
@@ -440,8 +489,7 @@ pub fn run() {
                             "show" => {
                                 if let Some(window) = app.get_webview_window("main") {
                                     position_window_near_mouse(&window);
-                                    let _ = window.show();
-                                    let _ = window.set_focus();
+                                    show_and_focus_window(&window);
                                 }
                             }
                             "quit" => {

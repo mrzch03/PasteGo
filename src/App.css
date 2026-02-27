@@ -318,36 +318,27 @@
   gap: 4px;
 }
 
-.clip-item {
+.clip-item-wrapper {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 10px 12px;
+  align-items: stretch;
   border-radius: var(--radius);
   background: var(--bg-card);
-
-  cursor: pointer;
   transition: all var(--transition);
   border: 1.5px solid var(--border);
   position: relative;
+  overflow: hidden;
 }
 
-.clip-item:hover {
-  background: var(--bg-card-hover);
-  box-shadow: var(--shadow-sm);
+.clip-item-wrapper.focused {
+  border-color: var(--accent-medium);
 }
 
-.clip-item.focused {
-  background: var(--bg-card-hover);
-  border-color: var(--border);
-}
-
-.clip-item.selected {
+.clip-item-wrapper.selected {
   border-color: var(--accent);
   background: var(--accent-light);
 }
 
-.clip-item.pinned::before {
+.clip-item-wrapper.pinned::before {
   content: "";
   position: absolute;
   left: 0;
@@ -356,12 +347,43 @@
   width: 3px;
   border-radius: 0 3px 3px 0;
   background: var(--pin-color);
+  z-index: 1;
 }
 
-/* Select circle */
-.clip-select-indicator {
+/* === 通用 hover 遮罩层 === */
+.zone-hover-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--transition);
+  pointer-events: none;
+  z-index: 2;
+  border-radius: inherit;
+}
+
+/* === 选中区域 === */
+.clip-zone-select {
   flex-shrink: 0;
-  padding-top: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  cursor: pointer;
+  transition: background var(--transition);
+  position: relative;
+}
+
+.clip-zone-select > .zone-hover-overlay {
+  background: rgba(52, 199, 89, 0.15);
+  color: rgba(52, 199, 89, 0.7);
+  border-radius: var(--radius) 0 0 var(--radius);
+}
+
+.clip-zone-select:hover > .zone-hover-overlay {
+  opacity: 1;
 }
 
 .select-circle {
@@ -381,9 +403,23 @@
   background: var(--accent);
 }
 
-.clip-body {
+/* === 主体区域 === */
+.clip-zone-body {
   flex: 1;
   min-width: 0;
+  padding: 10px 8px;
+  cursor: pointer;
+  transition: background var(--transition);
+  position: relative;
+}
+
+.clip-zone-body > .zone-hover-overlay {
+  background: rgba(230, 230, 235, 0.92);
+  color: rgba(100, 100, 105, 0.85);
+}
+
+.clip-zone-body:hover > .zone-hover-overlay {
+  opacity: 1;
 }
 
 .clip-meta {
@@ -460,27 +496,8 @@
   display: block;
   -webkit-line-clamp: unset;
   overflow: visible;
-  max-height: 300px;
-  overflow-y: auto;
 }
 
-/* 展开/折叠按钮 */
-.clip-expand-btn {
-  background: none;
-  border: none;
-  color: var(--accent);
-  font-size: 11px;
-  cursor: pointer;
-  padding: 0;
-  align-self: flex-start;
-  opacity: 0.85;
-  transition: opacity var(--transition);
-}
-
-.clip-expand-btn:hover {
-  opacity: 1;
-  text-decoration: underline;
-}
 
 .clip-text.code {
   font-family: "SF Mono", "Fira Code", "Consolas", monospace;
@@ -499,19 +516,27 @@
   border: 1px solid var(--border);
 }
 
-.clip-actions {
+/* === 操作区域 === */
+.clip-zone-actions {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  padding: 6px 4px;
   opacity: 0;
-  transform: translateX(4px);
   transition: all var(--transition);
   flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-start;
+  border-left: 1px solid transparent;
 }
 
-.clip-item:hover .clip-actions {
+.clip-zone-actions:hover {
+  border-left-color: var(--border);
+  background: var(--bg-card-hover);
+}
+
+.clip-item-wrapper:hover .clip-zone-actions {
   opacity: 1;
-  transform: translateX(0);
 }
 
 .btn-action {
@@ -533,15 +558,9 @@
   color: var(--accent);
 }
 
-/* 复制按钮样式 */
-.btn-action.btn-copy-item:hover {
-  background: rgba(52, 199, 89, 0.1);
-  color: var(--success);
-}
-
-.btn-action.btn-copy-item.copied {
-  color: var(--success);
-  opacity: 1;
+/* 展开按钮 */
+.btn-action.btn-expand.expanded {
+  color: var(--accent);
 }
 
 /* 删除按钮 — 更大更醒目 */
