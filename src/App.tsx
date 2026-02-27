@@ -97,6 +97,15 @@ function App() {
     setView("generate");
   }, [selection, clipboard.clips, ai]);
 
+  // 批量删除选中的条目
+  const handleDeleteSelected = useCallback(async () => {
+    const ids = Array.from(selection.selectedIds);
+    for (const id of ids) {
+      await clipboard.deleteClip(id);
+    }
+    selection.removeAll(ids);
+  }, [selection, clipboard]);
+
   // Global keyboard: Escape to go back / hide
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -168,6 +177,10 @@ function App() {
             onTogglePin={clipboard.togglePin}
             selectedCount={selection.selectedCount}
             onStartGenerate={handleStartGenerate}
+            onSelectAll={() => selection.selectAll(clipboard.clips)}
+            onClearSelection={selection.clearSelection}
+            onDeleteSelected={handleDeleteSelected}
+            getSelectedItems={selection.getSelectedItems}
           />
         )}
 
