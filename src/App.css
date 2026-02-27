@@ -222,20 +222,115 @@
   font-size: 12px;
 }
 
+/* 选择栏操作按钮组 */
+.selection-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-selection-action {
+  padding: 5px 10px;
+  border: none;
+  border-radius: var(--radius-xs);
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-selection-action:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.btn-selection-action.copied {
+  background: rgba(52, 199, 89, 0.4);
+}
+
+.btn-selection-action.btn-selection-delete:hover {
+  background: rgba(255, 59, 48, 0.5);
+}
+
+/* 分隔符选择器 */
+.separator-picker-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.btn-separator-toggle {
+  padding: 5px 4px;
+  border: none;
+  border-radius: var(--radius-xs);
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all var(--transition);
+  margin-left: -2px;
+}
+
+.btn-separator-toggle:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.separator-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  z-index: 100;
+  overflow: hidden;
+  min-width: 90px;
+}
+
+.separator-option {
+  width: 100%;
+  padding: 7px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: all var(--transition);
+}
+
+.separator-option:hover {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+.separator-option.active {
+  background: var(--accent-light);
+  color: var(--accent);
+  font-weight: 600;
+}
+
 .btn-generate {
-  padding: 7px 16px;
+  padding: 5px 12px;
   border: none;
   border-radius: var(--radius-sm);
   background: rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(4px);
   color: white;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 
 .btn-generate:hover {
@@ -431,8 +526,26 @@
   color: var(--accent);
 }
 
+/* 复制按钮样式 */
+.btn-action.btn-copy-item:hover {
+  background: rgba(52, 199, 89, 0.1);
+  color: var(--success);
+}
+
+.btn-action.btn-copy-item.copied {
+  color: var(--success);
+  opacity: 1;
+}
+
+/* 删除按钮 — 更大更醒目 */
+.btn-action.btn-delete {
+  width: 28px;
+  height: 28px;
+  color: var(--text-tertiary);
+}
+
 .btn-action.btn-delete:hover {
-  background: rgba(255, 59, 48, 0.1);
+  background: rgba(255, 59, 48, 0.15);
   color: var(--danger);
 }
 
@@ -1338,7 +1451,78 @@
   cursor: not-allowed;
 }
 
-/* ======================== Preview overlay (hidden) ======================== */
-.preview-overlay {
-  display: none;
+/* ======================== 图片预览弹窗 ======================== */
+.image-preview-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.15s ease-out;
+  cursor: pointer;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.image-preview-container {
+  position: relative;
+  max-width: 90%;
+  max-height: 90%;
+  cursor: default;
+}
+
+.image-preview-full {
+  max-width: 100%;
+  max-height: 85vh;
+  border-radius: var(--radius);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  object-fit: contain;
+}
+
+.image-preview-close {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
+}
+
+.image-preview-close:hover {
+  background: rgba(255, 59, 48, 0.8);
+  transform: scale(1.1);
+}
+
+/* 图片缩略图可点击提示 */
+.clip-image-preview {
+  cursor: zoom-in;
+  transition: all var(--transition);
+}
+
+.clip-image-preview:hover {
+  opacity: 0.85;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* 选择操作栏横向布局调整 */
+.selection-bar {
+  flex-wrap: wrap;
+  gap: 8px;
 }

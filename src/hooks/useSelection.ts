@@ -35,6 +35,20 @@ export function useSelection() {
     setSelectedIds(new Set());
   }, []);
 
+  // 全选指定列表中的所有条目
+  const selectAll = useCallback((clips: ClipItem[]) => {
+    setSelectedIds(new Set(clips.map((c) => c.id)));
+  }, []);
+
+  // 批量删除选中的条目对应的 ID
+  const removeAll = useCallback((ids: string[]) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      ids.forEach((id) => next.delete(id));
+      return next;
+    });
+  }, []);
+
   const getSelectedItems = useCallback(
     (clips: ClipItem[]) => clips.filter((c) => selectedIds.has(c.id)),
     [selectedIds]
@@ -45,8 +59,10 @@ export function useSelection() {
     selectedCount: selectedIds.size,
     toggle,
     remove,
+    removeAll,
     isSelected,
     clearSelection,
+    selectAll,
     getSelectedItems,
   };
 }
