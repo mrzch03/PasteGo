@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate objc;
+
 mod ai;
 mod clipboard;
 mod db;
@@ -257,6 +260,23 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .setup(|app| {
+            // 窗口圆角
+            if let Some(window) = app.get_webview_window("main") {
+                #[allow(deprecated)]
+                let ns_win = window.ns_window().unwrap() as cocoa::base::id;
+                unsafe {
+                    use cocoa::appkit::{NSView, NSWindow};
+                    use cocoa::base::{NO, YES};
+                    ns_win.setOpaque_(NO);
+                    ns_win.setBackgroundColor_(cocoa::appkit::NSColor::clearColor(cocoa::base::nil));
+                    let content_view: cocoa::base::id = ns_win.contentView();
+                    content_view.setWantsLayer(YES);
+                    let layer: cocoa::base::id = msg_send![content_view, layer];
+                    let _: () = msg_send![layer, setCornerRadius: 12.0_f64];
+                    let _: () = msg_send![layer, setMasksToBounds: YES];
+                }
+            }
+
             // Database setup
             let app_dir = app
                 .path()

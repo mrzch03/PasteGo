@@ -122,8 +122,19 @@ function App() {
   return (
     <div className="app">
       {/* Title bar (draggable) */}
-      <div className="titlebar" onMouseDown={() => getCurrentWindow().startDragging()}>
-        <span className="brand-mark" /><span className="app-title">PasteGo</span>
+      <div className="titlebar" onMouseDown={(e) => { if ((e.target as HTMLElement).closest('button')) return; getCurrentWindow().startDragging(); }}>
+        <div className="titlebar-left">
+          <button
+            className="window-close-btn"
+            onClick={() => getCurrentWindow().hide()}
+            title="关闭窗口"
+          >
+            <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M1 1l6 6M7 1L1 7" strokeLinecap="round" />
+            </svg>
+          </button>
+          <span className="app-title">PasteGo</span>
+        </div>
         <div className="titlebar-actions">
           <button
             className={`nav-btn ${view === "history" ? "active" : ""}`}
@@ -155,8 +166,8 @@ function App() {
               stroke="currentColor"
               strokeWidth="1.3"
             >
-              <circle cx="8" cy="8" r="2" />
-              <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.5 1.5M11.5 11.5L13 13M3 13l1.5-1.5M11.5 4.5L13 3" />
+              <circle cx="8" cy="8" r="2.5" />
+              <path d="M6.8 1.2h2.4l.3 1.7a5.5 5.5 0 011.2.7l1.6-.6.7 1.2-1.3 1.1c.1.4.1.9 0 1.4l1.3 1.1-.7 1.2-1.6-.6a5.5 5.5 0 01-1.2.7l-.3 1.7H6.8l-.3-1.7a5.5 5.5 0 01-1.2-.7l-1.6.6-.7-1.2 1.3-1.1a5.5 5.5 0 010-1.4L3 4.2l.7-1.2 1.6.6a5.5 5.5 0 011.2-.7l.3-1.7z" />
             </svg>
           </button>
         </div>

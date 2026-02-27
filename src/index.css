@@ -1,5 +1,6 @@
 :root {
   --bg: #f2f2f7;
+  --bg-solid: #f2f2f7;
   --bg-card: rgba(255, 255, 255, 0.78);
   --bg-card-hover: rgba(255, 255, 255, 0.95);
   --bg-input: rgba(255, 255, 255, 0.8);
@@ -19,6 +20,20 @@
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 2px 10px rgba(0, 0, 0, 0.06);
   --transition: 0.15s cubic-bezier(0.25, 0.1, 0.25, 1);
+  --code-bg: rgba(0, 0, 0, 0.03);
+  --badge-text-bg: rgba(59, 130, 246, 0.1);
+  --badge-text-color: #3b82f6;
+  --badge-code-bg: rgba(16, 185, 129, 0.1);
+  --badge-code-color: #10b981;
+  --badge-url-bg: rgba(245, 158, 11, 0.1);
+  --badge-url-color: #f59e0b;
+  --badge-image-bg: rgba(236, 72, 153, 0.1);
+  --badge-image-color: #ec4899;
+  --pin-color: #f59e0b;
+  --generate-btn-bg: rgba(255, 255, 255, 0.93);
+  --generate-btn-hover-bg: #fff;
+  --generate-btn-shadow: 0 2px 10px rgba(88, 86, 214, 0.3);
+  --overlay-bg: rgba(0, 0, 0, 0.6);
 
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
     "Helvetica Neue", sans-serif;
@@ -26,7 +41,7 @@
   font-weight: 400;
   font-size: 13px;
   color: var(--text);
-  background-color: var(--bg);
+  background: var(--bg);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -36,15 +51,19 @@
   box-sizing: border-box;
 }
 
-body {
+html, body {
   margin: 0;
   overflow: hidden;
+  background: transparent;
 }
 
 #root {
   height: 100vh;
   display: flex;
   flex-direction: column;
+  background: var(--bg-solid);
+  overflow: hidden;
+  border-radius: 12px;
 }
 
 ::-webkit-scrollbar {
@@ -79,10 +98,11 @@ kbd {
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #1c1c1e;
+    --bg-solid: #1c1c1e;
     --bg-card: rgba(44, 44, 46, 0.78);
     --bg-card-hover: rgba(58, 58, 60, 0.95);
     --bg-input: rgba(44, 44, 46, 0.8);
-    --border: rgba(255, 255, 255, 0.08);
+    --border: rgba(255, 255, 255, 0.1);
     --text: #f2f2f7;
     --text-secondary: #8e8e93;
     --text-tertiary: #636366;
@@ -90,7 +110,22 @@ kbd {
     --accent-medium: rgba(88, 86, 214, 0.25);
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
     --shadow-md: 0 2px 10px rgba(0, 0, 0, 0.3);
+    --code-bg: rgba(255, 255, 255, 0.05);
+    --badge-text-bg: rgba(59, 130, 246, 0.18);
+    --badge-text-color: #60a5fa;
+    --badge-code-bg: rgba(16, 185, 129, 0.18);
+    --badge-code-color: #34d399;
+    --badge-url-bg: rgba(245, 158, 11, 0.18);
+    --badge-url-color: #fbbf24;
+    --badge-image-bg: rgba(236, 72, 153, 0.18);
+    --badge-image-color: #f472b6;
+    --pin-color: #fbbf24;
+    --generate-btn-bg: rgba(30, 30, 34, 0.92);
+    --generate-btn-hover-bg: rgba(44, 44, 48, 1);
+    --generate-btn-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+    --overlay-bg: rgba(0, 0, 0, 0.75);
   }
+
 
   ::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.08);

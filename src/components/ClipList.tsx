@@ -60,9 +60,8 @@ export function ClipList({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   // 图片预览弹窗状态
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  // 合并复制分隔符
-  const [separator, setSeparator] = useState("newline");
-  const [showSeparatorPicker, setShowSeparatorPicker] = useState(false);
+  // 合并复制
+  const [separator] = useState("newline");
   const [mergeCopied, setMergeCopied] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -226,74 +225,44 @@ export function ClipList({
             <span>项已选</span>
           </div>
           <div className="selection-actions">
-            <button className="btn-selection-action" onClick={onSelectAll} title="全选">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3">
-                <rect x="1" y="1" width="12" height="12" rx="2" />
-                <path d="M4 7L6 9L10 5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              全选
-            </button>
-            <button className="btn-selection-action" onClick={onClearSelection} title="取消选择">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3">
-                <rect x="1" y="1" width="12" height="12" rx="2" />
-                <path d="M4 4L10 10M10 4L4 10" strokeLinecap="round" />
-              </svg>
-              取消
-            </button>
-            <div className="separator-picker-wrapper">
-              <button
-                className={`btn-selection-action ${mergeCopied ? "copied" : ""}`}
-                onClick={handleMergeCopy}
-                title="合并复制选中内容"
-              >
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3">
-                  <rect x="4" y="1" width="9" height="9" rx="1.5" />
-                  <path d="M1 5v7a1.5 1.5 0 001.5 1.5H10" />
-                </svg>
-                {mergeCopied ? "已复制" : "合并复制"}
-              </button>
-              <button
-                className="btn-separator-toggle"
-                onClick={() => setShowSeparatorPicker(!showSeparatorPicker)}
-                title="选择分隔符"
-              >
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M2 4L5 7L8 4" strokeLinecap="round" strokeLinejoin="round" />
+            {selectedCount < clips.length ? (
+              <button className="btn-icon-action" onClick={onSelectAll} title="全选">
+                <svg width="15" height="15" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3">
+                  <rect x="1" y="1" width="12" height="12" rx="2" />
+                  <path d="M4 7L6 9L10 5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
-              {showSeparatorPicker && (
-                <div className="separator-dropdown">
-                  {SEPARATOR_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.key}
-                      className={`separator-option ${separator === opt.key ? "active" : ""}`}
-                      onClick={() => { setSeparator(opt.key); setShowSeparatorPicker(false); }}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            ) : (
+              <button className="btn-icon-action" onClick={onClearSelection} title="取消全选">
+                <svg width="15" height="15" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3">
+                  <rect x="1" y="1" width="12" height="12" rx="2" />
+                  <path d="M4 4L10 10M10 4L4 10" strokeLinecap="round" />
+                </svg>
+              </button>
+            )}
             <button
-              className="btn-selection-action btn-selection-delete"
+              className={`btn-icon-action ${mergeCopied ? "copied" : ""}`}
+              onClick={handleMergeCopy}
+              title={mergeCopied ? "已复制" : "合并复制"}
+            >
+              <svg width="15" height="15" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3">
+                <rect x="4" y="1" width="9" height="9" rx="1.5" />
+                <path d="M1 5v7a1.5 1.5 0 001.5 1.5H10" />
+              </svg>
+            </button>
+            <button
+              className="btn-icon-action btn-icon-delete"
               onClick={onDeleteSelected}
               title="删除选中"
             >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3">
+              <svg width="15" height="15" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3">
                 <path d="M2 4h10M5 4V2h4v2M3 4v8h8V4" />
               </svg>
-              删除
             </button>
             <button className="btn-generate" onClick={onStartGenerate}>
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                <path
-                  d="M8 1L15 8L8 15M15 8H1"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                <path d="M8 2L9.5 6.5L14 8L9.5 9.5L8 14L6.5 9.5L2 8L6.5 6.5L8 2Z"
+                  fill="currentColor" stroke="currentColor" strokeWidth="0.5" strokeLinejoin="round" />
               </svg>
               AI 生成
             </button>
