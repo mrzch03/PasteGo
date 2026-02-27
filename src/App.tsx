@@ -164,7 +164,7 @@ function App() {
             onTypeFilterChange={clipboard.setTypeFilter}
             isSelected={selection.isSelected}
             onToggleSelect={selection.toggle}
-            onDelete={clipboard.deleteClip}
+            onDelete={(id: string) => { clipboard.deleteClip(id); selection.remove(id); }}
             onTogglePin={clipboard.togglePin}
             selectedCount={selection.selectedCount}
             onStartGenerate={handleStartGenerate}

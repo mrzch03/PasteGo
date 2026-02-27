@@ -21,6 +21,16 @@ export function useSelection() {
     [selectedIds]
   );
 
+  // 从选中集合中移除指定 ID（用于删除条目后同步选中状态）
+  const remove = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  }, []);
+
   const clearSelection = useCallback(() => {
     setSelectedIds(new Set());
   }, []);
@@ -34,6 +44,7 @@ export function useSelection() {
     selectedIds,
     selectedCount: selectedIds.size,
     toggle,
+    remove,
     isSelected,
     clearSelection,
     getSelectedItems,
