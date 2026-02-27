@@ -18,6 +18,8 @@ function App() {
   const ai = useAI();
   const [quickItems, setQuickItems] = useState<ClipItem[]>([]);
   const [quickTemplateId, setQuickTemplateId] = useState<string | null>(null);
+  // 快照：进入生成视图时冻结已选素材，避免后续剪贴板变化导致素材丢失
+  const [snapshotItems, setSnapshotItems] = useState<ClipItem[]>([]);
 
   // Keep a ref to templates so the listener always sees the latest
   const templatesRef = useRef<Template[]>([]);
@@ -86,12 +88,14 @@ function App() {
 
   const handleStartGenerate = useCallback(() => {
     if (selection.selectedCount === 0) return;
+    // 冻结当前已选素材，防止后续剪贴板刷新导致素材丢失
+    setSnapshotItems(selection.getSelectedItems(clipboard.clips));
     setQuickItems([]);
     setQuickTemplateId(null);
     ai.setOutput("");
     ai.setError(null);
     setView("generate");
-  }, [selection.selectedCount, ai]);
+  }, [selection, clipboard.clips, ai]);
 
   // Global keyboard: Escape to go back / hide
   useEffect(() => {
@@ -169,14 +173,14 @@ function App() {
 
         {view === "generate" && (
           <GenerateView
-            selectedItems={quickItems.length > 0 ? quickItems : selection.getSelectedItems(clipboard.clips)}
+            selectedItems={quickItems.length > 0 ? quickItems : snapshotItems}
             templates={ai.templates}
             providers={ai.providers}
             output={ai.output}
             generating={ai.generating}
             error={ai.error}
             onGenerate={ai.generate}
-            onBack={() => { setQuickItems([]); setQuickTemplateId(null); setView("history"); }}
+            onBack={() => { setQuickItems([]); setQuickTemplateId(null); setSnapshotItems([]); setView("history"); }}
             onNavigateSettings={() => setView("settings")}
             initialTemplateId={quickTemplateId}
           />
