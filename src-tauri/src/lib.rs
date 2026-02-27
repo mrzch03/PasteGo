@@ -163,6 +163,46 @@ fn base64_encode(data: &[u8]) -> String {
     result
 }
 
+/// Simulate Cmd+V keypress using macOS CGEvent API
+fn simulate_cmd_v() {
+    use core_graphics::event::{CGEvent, CGEventFlags, CGKeyCode};
+    use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
+
+    // Key code for 'V' on macOS is 9
+    const KEY_V: CGKeyCode = 9;
+
+    if let Ok(source) = CGEventSource::new(CGEventSourceStateID::HIDSystemState) {
+        if let Ok(key_down) = CGEvent::new_keyboard_event(source.clone(), KEY_V, true) {
+            key_down.set_flags(CGEventFlags::CGEventFlagCommand);
+            key_down.post(core_graphics::event::CGEventTapLocation::HID);
+        }
+        if let Ok(key_up) = CGEvent::new_keyboard_event(source, KEY_V, false) {
+            key_up.set_flags(CGEventFlags::CGEventFlagCommand);
+            key_up.post(core_graphics::event::CGEventTapLocation::HID);
+        }
+    }
+}
+
+#[tauri::command]
+async fn copy_and_paste(app: tauri::AppHandle, content: String) -> Result<(), String> {
+    // 写入系统剪贴板
+    let mut clipboard = arboard::Clipboard::new().map_err(|e| e.to_string())?;
+    clipboard.set_text(&content).map_err(|e| e.to_string())?;
+
+    // 隐藏主窗口
+    if let Some(win) = app.get_webview_window("main") {
+        let _ = win.hide();
+    }
+
+    // 等待焦点切换回目标应用
+    std::thread::sleep(std::time::Duration::from_millis(200));
+
+    // 模拟 Cmd+V 粘贴
+    simulate_cmd_v();
+
+    Ok(())
+}
+
 fn register_template_shortcuts(app: &tauri::AppHandle, db: &Database) {
     use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
@@ -205,6 +245,7 @@ fn register_template_shortcuts(app: &tauri::AppHandle, db: &Database) {
                                 simulate_cmd_c();
                                 std::thread::sleep(std::time::Duration::from_millis(200));
                                 if let Some(win) = handle.get_webview_window("main") {
+                                    position_window_near_mouse(&win);
                                     let _ = win.show();
                                     let _ = win.set_focus();
                                 }
@@ -242,11 +283,89 @@ fn simulate_cmd_c() {
     }
 }
 
+/// 获取当前鼠标光标位置（macOS CGEvent API）
+fn get_mouse_position() -> (f64, f64) {
+    use core_graphics::event::CGEvent;
+    use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
+
+    if let Ok(source) = CGEventSource::new(CGEventSourceStateID::HIDSystemState) {
+        if let Ok(event) = CGEvent::new(source) {
+            let point = event.location();
+            return (point.x, point.y);
+        }
+    }
+    (0.0, 0.0)
+}
+
+/// 将窗口定位到鼠标光标附近，确保不超出屏幕边界
+fn position_window_near_mouse(window: &tauri::WebviewWindow) {
+    use tauri::{LogicalPosition, LogicalSize};
+
+    let (mouse_x, mouse_y) = get_mouse_position();
+
+    // 获取窗口尺寸
+    let win_size = window
+        .outer_size()
+        .map(|s| {
+            let scale = window.scale_factor().unwrap_or(1.0);
+            LogicalSize {
+                width: s.width as f64 / scale,
+                height: s.height as f64 / scale,
+            }
+        })
+        .unwrap_or(LogicalSize {
+            width: 400.0,
+            height: 600.0,
+        });
+
+    // 获取当前屏幕尺寸和位置
+    let (screen_x, screen_y, screen_w, screen_h) = window
+        .current_monitor()
+        .ok()
+        .flatten()
+        .map(|m| {
+            let pos = m.position();
+            let size = m.size();
+            let scale = m.scale_factor();
+            (
+                pos.x as f64 / scale,
+                pos.y as f64 / scale,
+                size.width as f64 / scale,
+                size.height as f64 / scale,
+            )
+        })
+        .unwrap_or((0.0, 0.0, 1920.0, 1080.0));
+
+    // 偏移量：窗口出现在鼠标右下方一点
+    let offset = 10.0;
+    let mut x = mouse_x + offset;
+    let mut y = mouse_y + offset;
+
+    // 确保窗口不超出屏幕右边界
+    if x + win_size.width > screen_x + screen_w {
+        x = mouse_x - win_size.width - offset;
+    }
+    // 确保窗口不超出屏幕下边界
+    if y + win_size.height > screen_y + screen_h {
+        y = mouse_y - win_size.height - offset;
+    }
+    // 确保不超出左上边界
+    if x < screen_x {
+        x = screen_x;
+    }
+    if y < screen_y {
+        y = screen_y;
+    }
+
+    let _ = window.set_position(LogicalPosition::new(x, y));
+}
+
 fn toggle_main_window(app: &tauri::AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         if window.is_visible().unwrap_or(false) {
             let _ = window.hide();
         } else {
+            position_window_near_mouse(&window);
             let _ = window.show();
             let _ = window.set_focus();
         }
@@ -320,6 +439,7 @@ pub fn run() {
                         match event.id().as_ref() {
                             "show" => {
                                 if let Some(window) = app.get_webview_window("main") {
+                                    position_window_near_mouse(&window);
                                     let _ = window.show();
                                     let _ = window.set_focus();
                                 }
@@ -367,6 +487,7 @@ pub fn run() {
             delete_provider,
             ai_generate,
             read_image_base64,
+            copy_and_paste,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
