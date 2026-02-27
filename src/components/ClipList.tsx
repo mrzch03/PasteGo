@@ -60,6 +60,24 @@ export function ClipList({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   // 图片预览弹窗状态
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  // 长文本展开状态，记录已展开的条目 ID
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  // 文本截断阈值
+  const TEXT_TRUNCATE_LIMIT = 200;
+
+  // 切换展开/折叠
+  const toggleExpand = useCallback((id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
   // 合并复制
   const [separator] = useState("newline");
   const [mergeCopied, setMergeCopied] = useState(false);
@@ -343,12 +361,25 @@ export function ClipList({
                   }}
                 />
               ) : (
-                <div
-                  className={`clip-text ${clip.clip_type === "code" ? "code" : ""}`}
-                >
-                  {clip.content.length > 200
-                    ? clip.content.slice(0, 200) + "..."
-                    : clip.content}
+                <div className="clip-text-wrapper">
+                  <div
+                    className={`clip-text ${clip.clip_type === "code" ? "code" : ""} ${expandedIds.has(clip.id) ? "expanded" : ""}`}
+                  >
+                    {clip.content.length > TEXT_TRUNCATE_LIMIT && !expandedIds.has(clip.id)
+                      ? clip.content.slice(0, TEXT_TRUNCATE_LIMIT) + "..."
+                      : clip.content}
+                  </div>
+                  {clip.content.length > TEXT_TRUNCATE_LIMIT && (
+                    <button
+                      className="clip-expand-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleExpand(clip.id);
+                      }}
+                    >
+                      {expandedIds.has(clip.id) ? "收起" : "查看更多"}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
