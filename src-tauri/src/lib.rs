@@ -115,6 +115,7 @@ async fn ai_generate(
     state: tauri::State<'_, AppState>,
     provider_id: Option<String>,
     prompt: String,
+    image_paths: Option<Vec<String>>,
 ) -> Result<String, String> {
     let providers = state.db.get_providers().map_err(|e| e.to_string())?;
     let provider = if let Some(pid) = provider_id {
@@ -125,6 +126,32 @@ async fn ai_generate(
 
     let provider = provider.ok_or("No AI provider configured. Please add one in Settings.")?;
 
+    // 读取图片文件并转为 base64
+    let images: Vec<ai::ImageData> = image_paths
+        .unwrap_or_default()
+        .iter()
+        .filter_map(|path| {
+            let data = std::fs::read(path).ok()?;
+            let base64 = base64_encode(&data);
+            // 根据文件扩展名判断 MIME 类型
+            let media_type = if path.ends_with(".png") {
+                "image/png"
+            } else if path.ends_with(".jpg") || path.ends_with(".jpeg") {
+                "image/jpeg"
+            } else if path.ends_with(".gif") {
+                "image/gif"
+            } else if path.ends_with(".webp") {
+                "image/webp"
+            } else {
+                "image/png"
+            };
+            Some(ai::ImageData {
+                media_type: media_type.to_string(),
+                base64,
+            })
+        })
+        .collect();
+
     ai::stream_generate(
         app,
         &provider.kind,
@@ -132,6 +159,7 @@ async fn ai_generate(
         &provider.model,
         &provider.api_key,
         &prompt,
+        &images,
     )
     .await
 }
