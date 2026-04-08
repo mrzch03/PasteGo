@@ -13,6 +13,13 @@ pub struct StreamChunk {
     pub done: bool,
 }
 
+/// 图片数据，用于多模态请求
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ImageData {
+    pub media_type: String,
+    pub base64: String,
+}
+
 pub async fn stream_generate(
     app: AppHandle,
     kind: &str,
@@ -20,10 +27,11 @@ pub async fn stream_generate(
     model: &str,
     api_key: &str,
     prompt: &str,
+    images: &[ImageData],
 ) -> Result<String, String> {
     match kind {
-        "openai" | "kimi" | "minimax" => stream_openai(app, endpoint, model, api_key, prompt).await,
-        "claude" => stream_claude(app, endpoint, model, api_key, prompt).await,
+        "openai" | "kimi" | "minimax" => stream_openai(app, endpoint, model, api_key, prompt, images).await,
+        "claude" => stream_claude(app, endpoint, model, api_key, prompt, images).await,
         "ollama" => stream_ollama(app, endpoint, model, prompt).await,
         _ => Err(format!("Unknown provider kind: {}", kind)),
     }
@@ -35,11 +43,29 @@ async fn stream_openai(
     model: &str,
     api_key: &str,
     prompt: &str,
+    images: &[ImageData],
 ) -> Result<String, String> {
     let url = format!("{}/chat/completions", endpoint.trim_end_matches('/'));
+
+    // 构建消息内容：如果有图片则使用多模态格式
+    let content = if images.is_empty() {
+        serde_json::json!(prompt)
+    } else {
+        let mut parts = vec![serde_json::json!({"type": "text", "text": prompt})];
+        for img in images {
+            parts.push(serde_json::json!({
+                "type": "image_url",
+                "image_url": {
+                    "url": format!("data:{};base64,{}", img.media_type, img.base64)
+                }
+            }));
+        }
+        serde_json::json!(parts)
+    };
+
     let body = serde_json::json!({
         "model": model,
-        "messages": [{"role": "user", "content": prompt}],
+        "messages": [{"role": "user", "content": content}],
         "stream": true
     });
 
@@ -98,12 +124,33 @@ async fn stream_claude(
     model: &str,
     api_key: &str,
     prompt: &str,
+    images: &[ImageData],
 ) -> Result<String, String> {
     let url = format!("{}/messages", endpoint.trim_end_matches('/'));
+
+    // 构建消息内容：如果有图片则使用 Claude Vision 多模态格式
+    let content = if images.is_empty() {
+        serde_json::json!(prompt)
+    } else {
+        let mut parts: Vec<serde_json::Value> = Vec::new();
+        for img in images {
+            parts.push(serde_json::json!({
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": img.media_type,
+                    "data": img.base64
+                }
+            }));
+        }
+        parts.push(serde_json::json!({"type": "text", "text": prompt}));
+        serde_json::json!(parts)
+    };
+
     let body = serde_json::json!({
         "model": model,
         "max_tokens": 4096,
-        "messages": [{"role": "user", "content": prompt}],
+        "messages": [{"role": "user", "content": content}],
         "stream": true
     });
 

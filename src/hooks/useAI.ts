@@ -40,9 +40,20 @@ export function useAI() {
       setOutput("");
       setError(null);
 
-      // Assemble prompt
+      // 收集图片路径，用于多模态请求
+      const imagePaths: string[] = selectedItems
+        .filter((item) => item.clip_type === "image" && item.image_path)
+        .map((item) => item.image_path as string);
+
+      // 组装文本 prompt
       const materials = selectedItems
-        .map((item, i) => `【素材 ${i + 1}】(${item.clip_type})\n${item.content}`)
+        .map((item, i) => {
+          if (item.clip_type === "image") {
+            // 图片素材用占位说明，实际图片数据通过 imagePaths 传递
+            return `【素材 ${i + 1}】(图片)`;
+          }
+          return `【素材 ${i + 1}】(${item.clip_type})\n${item.content}`;
+        })
         .join("\n\n---\n\n");
 
       let prompt: string;
@@ -71,6 +82,7 @@ export function useAI() {
         await invoke("ai_generate", {
           providerId: providerId || null,
           prompt,
+          imagePaths: imagePaths.length > 0 ? imagePaths : null,
         });
       } catch (e) {
         setError(String(e));
